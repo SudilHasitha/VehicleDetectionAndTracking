@@ -8,6 +8,7 @@ import tensorflow as tf
 import argparse
 import sys
 import flask
+import struct
 
 # This is needed since the working directory is the object_detection folder.
 sys.path.append('..')
@@ -20,6 +21,12 @@ from utils import visualization_utils as vis_util
 import RPi.GPIO as GPIO
 import time, threading
 
+# using socket and pickle for sending video
+import socket
+import pickle
+
+clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+clientsocket.connect(('192.168.8.138',8089)) #Change the ip to the desktop ip to check
 
 def distance():   
     try:
@@ -258,11 +265,15 @@ def ObjectTrackingCamera():
                     
             cv2.putText(frame,"FPS: {0:.2f}".format(frame_rate_calc),(30,50),font,1,(255,255,0),2,cv2.LINE_AA)
             # All the results have been drawn on the frame, so it's time to display it.
-
+            sendFrame = frame
             cv2.imshow('Object detector', frame)
             t2 = cv2.getTickCount()
             time1 = (t2-t1)/freq
             frame_rate_calc = 1/time1
+            
+            # Sending a copy of video frame
+            data = pickle.dumps(sendFrame) ### new code
+            clientsocket.sendall(struct.pack("<L", len(data))+data) ### new code
             
             # Press 'q' to quit
             if cv2.waitKey(1) == ord('s'):
