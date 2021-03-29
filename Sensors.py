@@ -25,8 +25,22 @@ import time, threading
 import socket
 import pickle
 
-clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-clientsocket.connect(('192.168.8.138',8089)) #Change the ip to the desktop ip to check
+#clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+#clientsocket.connect(('192.168.8.138',8089)) #Change the ip to the desktop ip to check
+
+# Using MQTT
+import paho.mqtt.client as mqtt
+import base64
+
+# Raspberry PI IP address
+MQTT_BROKER = "192.168.8.196"
+# Topic on which frame will be published
+MQTT_SEND = "home/server"
+
+# Phao-MQTT Clinet
+client = mqtt.Client()
+# Establishing Connection with the Broker
+client.connect(MQTT_BROKER)
 
 def distance():   
     try:
@@ -266,14 +280,22 @@ def ObjectTrackingCamera():
             cv2.putText(frame,"FPS: {0:.2f}".format(frame_rate_calc),(30,50),font,1,(255,255,0),2,cv2.LINE_AA)
             # All the results have been drawn on the frame, so it's time to display it.
             sendFrame = frame
-            cv2.imshow('Object detector', frame)
+            #cv2.imshow('Object detector', frame)
             t2 = cv2.getTickCount()
             time1 = (t2-t1)/freq
             frame_rate_calc = 1/time1
             
             # Sending a copy of video frame
-            data = pickle.dumps(sendFrame) ### new code
-            clientsocket.sendall(struct.pack("<L", len(data))+data) ### new code
+            #data = pickle.dumps(sendFrame) ### new code
+            #clientsocket.sendall(struct.pack("<L", len(data))+data) ### new code
+            
+            ### MQTT based frame send
+            # Encoding the Frame
+            _, buffer = cv2.imencode('.jpg', frame)
+            # Converting into encoded bytes
+            jpg_as_text = base64.b64encode(buffer)
+            # Publishig the Frame on the Topic home/server
+            client.publish(MQTT_SEND, jpg_as_text)
             
             # Press 'q' to quit
             if cv2.waitKey(1) == ord('s'):
