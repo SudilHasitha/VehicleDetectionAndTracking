@@ -34,8 +34,11 @@ import base64
 
 # Raspberry PI IP address
 MQTT_BROKER = "192.168.8.196"
+
 # Topic on which frame will be published
 MQTT_SEND = "home/server"
+MQTT_SEND_ULTRASONIC = "home/distance"
+MQTT_SEND_LIGHT_INTENSITY = "home/light"
 
 # Phao-MQTT Clinet
 client = mqtt.Client()
@@ -78,7 +81,7 @@ def distance():
             pulse_duration = pulse_end - pulse_start
             distance = pulse_duration * 17000
             distance = round(distance, 2)
-    
+            client.publish(MQTT_SEND_ULTRASONIC, distance)
             print(distance,"cm")
     except:
         GPIO.cleanup()
@@ -111,6 +114,7 @@ def AutoLight():
             measureresistance=endtime-starttime
             
             res=(measureresistance/cap)*adj
+            client.publish(MQTT_SEND_LIGHT_INTENSITY, res)
             print(res)
             i=i+1
             t=t+res
@@ -141,13 +145,13 @@ def mapServoPosition (x,y):
     #global tiltAngle
     if (x < 220):
         panAngle += 10
-        if panAngle > 180:
+        if panAngle >= 180:
            panAngle = 180
         positionServo (panServo, panAngle)
 
     if (x > 280):
         panAngle -= 10
-        if panAngle < 0 :
+        if panAngle <= 0 :
             panAngle = 0
         positionServo (panServo, panAngle)
 
@@ -315,14 +319,11 @@ if __name__ == '__main__':
      
     ObjectTrackingThread = threading.Thread(target=ObjectTrackingCamera,daemon=True)
     ObjectTrackingThread.start()
-    #ObjectTrackingThread.join()
     
     distanceThread = threading.Thread(target=distance,daemon=True)
     distanceThread.start()
-    #distanceThread.join()
     
     AutoLight = threading.Thread(target=AutoLight,daemon=True)
     AutoLight.start()
     
-    distanceThread.join()
-    AutoLight.join()
+    
