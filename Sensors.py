@@ -211,9 +211,11 @@ def ObjectTrackingCamera():
     while True:
         # Initialize Picamera and grab reference to the raw capture
         camera = PiCamera()
-        camera.resolution = (640,480)
-        camera.framerate = 20
-        rawCapture = PiRGBArray(camera, size=(640,480))
+        sWidth = 640
+        sHeight = 480
+        camera.resolution = (sWidth,sHeight)
+        camera.framerate = 50
+        rawCapture = PiRGBArray(camera, size=(sWidth,sHeight))
         rawCapture.truncate(0)
 
         for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
@@ -258,14 +260,14 @@ def ObjectTrackingCamera():
                     [ymin, xmin, ymax, xmax] = boxPerson
                     
                     # convert to pixcel values
-                    left = 620 * xmin
-                    right = 620 * xmax
-                    top = 480 * ymin
-                    bottom = 480 * ymax
+                    left = sWidth * xmin
+                    right = sWidth * xmax
+                    top = sHeight * ymin
+                    bottom = sHeight * ymax
                     
                     # get the center point
                     center = (left + right)/2, (top + bottom)/2
-                    print(center)
+                    #print(center)
                     
                     # get coordinates for the center point
                     x = int(center[0])
@@ -310,11 +312,17 @@ def ObjectTrackingCamera():
 
 
 if __name__ == '__main__':
-    distanceThread = threading.Thread(target=distance,daemon=True)
-    distanceThread.start()
-    
-    AutoLight = threading.Thread(target=AutoLight,daemon=True)
-    AutoLight.start()
      
     ObjectTrackingThread = threading.Thread(target=ObjectTrackingCamera,daemon=True)
     ObjectTrackingThread.start()
+    #ObjectTrackingThread.join()
+    
+    distanceThread = threading.Thread(target=distance,daemon=True)
+    distanceThread.start()
+    #distanceThread.join()
+    
+    AutoLight = threading.Thread(target=AutoLight,daemon=True)
+    AutoLight.start()
+    
+    distanceThread.join()
+    AutoLight.join()
