@@ -21,6 +21,9 @@ from utils import visualization_utils as vis_util
 import RPi.GPIO as GPIO
 import time, threading
 
+# use multi processing instead of threading
+from multiprocessing import Process
+
 # using socket and pickle for sending video
 import socket
 import pickle
@@ -317,13 +320,24 @@ def ObjectTrackingCamera():
 
 if __name__ == '__main__':
      
-    ObjectTrackingThread = threading.Thread(target=ObjectTrackingCamera,daemon=True)
-    ObjectTrackingThread.start()
+    #ObjectTrackingThread = threading.Thread(target=ObjectTrackingCamera,daemon=True)
+    #ObjectTrackingThread.start()
     
-    distanceThread = threading.Thread(target=distance,daemon=True)
-    distanceThread.start()
+    #distanceThread = threading.Thread(target=distance,daemon=True)
+    #distanceThread.start()
     
-    AutoLight = threading.Thread(target=AutoLight,daemon=True)
-    AutoLight.start()
+    #AutoLight = threading.Thread(target=AutoLight,daemon=True)
+    #AutoLight.start()
     
+    ObjectTrackingProcess = Process(target=ObjectTrackingCamera)
+    ObjectTrackingProcess.start()
     
+    DistanceProcess = Process(target=distance)
+    DistanceProcess.start()
+    
+    AutoLightProcess = Process(target=AutoLight)
+    AutoLightProcess.start()
+    
+    ObjectTrackingProcess.join()
+    DistanceProcess.join()
+    AutoLightProcess.join()
