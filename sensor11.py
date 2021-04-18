@@ -5,12 +5,11 @@ import numpy as np
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import tensorflow as tf
-import argparse
 import sys
-import flask
-import struct
 import copy
-
+from noPlateRecognition import ANPR
+from PIL import Image
+import statistics
 # This is needed since the working directory is the object_detection folder.
 sys.path.append('..')
 
@@ -24,10 +23,6 @@ import time, threading
 
 # use multi processing instead of threading
 from multiprocessing import Process
-
-# using socket and pickle for sending video
-import socket
-import pickle
 
 #clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 #clientsocket.connect(('192.168.8.138',8089)) #Change the ip to the desktop ip to check
@@ -50,16 +45,46 @@ MQTT_BROKER = pi
 MQTT_SEND = "home/server"
 MQTT_SEND_ULTRASONIC = "home/distance"
 MQTT_SEND_LIGHT_INTENSITY = "home/light"
+MQTT_LIGHT = "home/LED"
+MQTT_BUZZER = "home/buzzer"
 
 # Phao-MQTT Clinet
 client = mqtt.Client("raspberry")
 # Establishing Connection with the Broker,port number and keep alive
 client.connect(MQTT_BROKER,1883,60)
 
-
-
 client.on_connect=on_connect  #bind call back function
 
+
+def LED():
+        
+        def on_connect(client,userdata,flags,rc):
+            print("connected")
+            client.subscribe(MQTT_LIGHT)
+            
+        def on_message(client,userdata,msg):
+            global res
+            res = msg.payload
+            LEDrun(int.from_bytes(res))
+            
+ 
+            
+        client.connect(MQTT_BROKER,1883)
+        client.subscribe(MQTT_LIGHT)
+        
+        client.on_connect = on_connect
+        client.on_message = on_message
+        
+        client.loop_start()
+        client.on_message = on_message
+        
+        def LEDrun(res):
+                if res > 10000:
+                        GPIO.setup(13,GPIO.OUT)
+                        GPIO.output(13,GPIO.HIGH)
+                else:
+                        GPIO.output(13,GPIO.LOW)
+                
 def distance():   
     try:
         GPIO.setmode(GPIO.BCM)
@@ -92,15 +117,18 @@ def distance():
             timeout = pulse_end + maxTime
             while GPIO.input(ECHO) == 1 and pulse_end < timeout:
                 pulse_end = time.time()
-    
+            
             pulse_duration = pulse_end - pulse_start
             distance = pulse_duration * 17000
             distance = round(distance, 2)
+                
             client.publish(MQTT_SEND_ULTRASONIC, distance)
+            
     except:
         GPIO.cleanup()
 
 def AutoLight():
+    global res
     try:    
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
@@ -113,6 +141,7 @@ def AutoLight():
         i=0
         t=0
         while True:
+            global res
             GPIO.setup(mpin, GPIO.OUT)
             GPIO.setup(tpin, GPIO.OUT)
             GPIO.output(mpin, False)
@@ -128,27 +157,39 @@ def AutoLight():
             measureresistance=endtime-starttime
             
             res=(measureresistance/cap)*adj
-            client.publish(MQTT_SEND_LIGHT_INTENSITY, res)
-            
+         
             i=i+1
             t=t+res
             if i==10:
                     t=t/i
                     i=0
                     t=0
+            
+            client.publish(MQTT_SEND_LIGHT_INTENSITY, res)
+            
+            #'''
+            print(res)
+            if copy.copy(res) > 10000:
+                GPIO.setmode(GPIO.BCM)
+                GPIO.setup(13,GPIO.OUT)
+                GPIO.output(13,GPIO.HIGH)
+            else:
+                GPIO.output(13,GPIO.LOW)
+            #'''
     except:
         GPIO.cleanup()
 
+    
 #position servos 
 def positionServo (servo, angle):
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     GPIO.setup(servo, GPIO.OUT)
     pwm = GPIO.PWM(servo, 50)
-    pwm.start(7.5)
-    dutyCycle = angle / 18. + 2.5 # 90/18 + 2.5 = 7.5
+    pwm.start(8)
+    dutyCycle = angle / 18. + 3 # 90/18 + 2.5 = 7.5
     pwm.ChangeDutyCycle(dutyCycle) # 7.5 -> 0 degree
-    time.sleep(0.1)
+    time.sleep(0.3)
     pwm.stop()
     GPIO.cleanup()
     
@@ -156,16 +197,16 @@ def positionServo (servo, angle):
 def mapServoPosition (x,y):
     global panAngle
     #global tiltAngle need another servo for vertical adjustment
-    if (x < 240): # x is the box width
-        panAngle += 1
-        if panAngle > 180:
-           panAngle = 180
+    if (x < 220): # x is the box width
+        panAngle += 10
+        if panAngle > 140:
+           panAngle = 140
         positionServo (panServo, panAngle)
 
-    if (x > 260):
-        panAngle -= 1
-        if panAngle < 0 :
-            panAngle = 0
+    if (x > 280):
+        panAngle -= 10
+        if panAngle < 40 :
+            panAngle = 40
         positionServo (panServo, panAngle)
 
 def ObjectTrackingCamera():
@@ -215,10 +256,6 @@ def ObjectTrackingCamera():
     detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
     num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
-    # Initialize frame rate calculation
-    frame_rate_calc = 1
-    freq = cv2.getTickFrequency()
-    font = cv2.FONT_HERSHEY_SIMPLEX
 
     # intialize the motor angle
     global panAngle
@@ -235,12 +272,10 @@ def ObjectTrackingCamera():
         rawCapture = PiRGBArray(camera, size=(sWidth,sHeight))
         rawCapture.truncate(0)
 
-        for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
-            t1 = cv2.getTickCount()            
+        for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):           
             
             # Acquire frame and expand frame dimensions to have shape: [1, None, None, 3]
             # i.e. a single-column array, where each item in the column has the pixel RGB value
-
             frame = np.copy(frame1.array)
             frame.setflags(write=1)
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -253,13 +288,38 @@ def ObjectTrackingCamera():
                
             # get the decteded object
             ObjectDetected = [category_index.get(value) for index,value in enumerate(classes[0]) if scores[0,index] > 0.4]
-                       
+            
             #print(ObjectDetected)        
             if len(ObjectDetected) != 0:
-                if (ObjectDetected[0])["name"] == "car":
-                                        
+                if (ObjectDetected[0])["name"] == "car" or (ObjectDetected[0])["name"] == "truck" or (ObjectDetected[0])["name"] == "suv":
+                    car = True
+                    if car:
+                        BUZZER = 12
+                        GPIO.setmode(GPIO.BCM)
+                        GPIO.setup(BUZZER, GPIO.OUT)
+                        GPIO.output(BUZZER, True)
+                        time.sleep(0.5)
+                        GPIO.output(BUZZER,False)
+                        car = False
+                    
+                    results = ""
+                    try:
+                        for i in range(1):
+                            # get the vehicle number
+                            frameNoRec = copy.deepcopy(frame)
+                            cv2.imwrite(str(i)+'.jpg',frameNoRec)
+                        
+                        for i in range(1):
+                            # get the vehicle number
+                            image = Image.open("001.jpg")
+                            anpr = ANPR(debug=True)
+                            (results, lpCnt) = anpr.find_and_ocr(image, psm=7,clearBorder=True)
+                    except:
+                        pass
+                    
+                                    
+                    #print((ObjectDetected[0])["name"])                    
                     # Detecting person and tracking using the camera
-         
                     # Draw the results of the detection (aka 'visulaize the results')        
                     vis_util.visualize_boxes_and_labels_on_image_array(
                         frame,
@@ -269,7 +329,7 @@ def ObjectTrackingCamera():
                         category_index,
                         use_normalized_coordinates=True,
                         line_thickness=8,
-                        min_score_thresh=0.60)
+                        min_score_thresh=0.40)
                     
                     # get the positions of the detection box
                     box = np.squeeze(boxes)
@@ -284,14 +344,10 @@ def ObjectTrackingCamera():
                     
                     # get the center point
                     center = (left + right)/2, (top + bottom)/2
-                    #print(center)
-                    
+                                      
                     # get coordinates for the center point
                     x = int(center[0])
-                    y = int(center[1]) # for vertical adjustment
-                    
-                    
-                    
+                    y = int(center[1]) # for vertical adjustment 
                     
                     # draw the center point
                     cv2.circle(frame,(x,y), 6, (0,0,255), -1)
@@ -299,18 +355,6 @@ def ObjectTrackingCamera():
                     # passing coordinates to adjust the camera
                     mapServoPosition (x,y)
             
-            # ,"FPS: {0:.2f}".format(frame_rate_calc),(30,50),font,1,(255,255,0),2,cv2.LINE_AA
-            # cv2.putText(frame)
-            # All the results have been drawn on the frame, so it's time to display it.
-            sendFrame = frame
-            #cv2.imshow('Object detector', frame)
-            t2 = cv2.getTickCount()
-            time1 = (t2-t1)/freq
-            frame_rate_calc = 1/time1
-            
-            # Sending a copy of video frame
-            #data = pickle.dumps(sendFrame) ### new code
-            #clientsocket.sendall(struct.pack("<L", len(data))+data) ### new code
             
             ### MQTT based frame send
             # Encoding the Frame
@@ -332,21 +376,28 @@ def ObjectTrackingCamera():
 
 
 
-if __name__ == '__main__':
-     
+if __name__ == '__main__':  
     
     ObjectTrackingProcess = Process(target=ObjectTrackingCamera)
-    ObjectTrackingProcess.start()
     
     DistanceProcess = Process(target=distance)
-    DistanceProcess.start()
     
     AutoLightProcess = Process(target=AutoLight)
-    AutoLightProcess.start()
     
+
+    process_list = [ObjectTrackingProcess,DistanceProcess,AutoLightProcess]
+    for p in process_list:
+        print("Process start")
+        p.start()
+        time.sleep(10)
+        
+    for p in process_list:
+        p.join()
+
     # Listen for q key
     k = cv2.waitKey(1) & 0xFF
     if k == ord('q'):
         ObjectTrackingProcess.terminate()
         DistanceProcess.terminate()
         AutoLightProcess.terminate()
+        AutoLightProcess2.terminate()        

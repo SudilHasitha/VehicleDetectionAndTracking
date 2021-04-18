@@ -1,21 +1,15 @@
 
 from flask import Flask, render_template, Response
-import base64
-import cv2 as cv
-import numpy as np
-import paho.mqtt.client as mqtt
-import time
-import io
-from PIL import Image
 
 #get mqtt classes
 from mqttvideostream import videoStreamMQTT
+#from mqttvideostream2 import videoStreamMQTT
 from mqttultrasonic import ultraSonicDistanceMQTT
 from mqttLDR import LDR_MQTT
 
 #Initialize the Flask app
 app = Flask(__name__)
-
+global distance,intensity
 def genframe(mqttvideostream):
     while True:
         frame = mqttvideostream.get_frame()
@@ -35,21 +29,25 @@ def getResistance(mqttLDR):
 
 @app.route('/')
 def index():
-    return render_template('index.html',LDR_feed= next(getResistance(LDR_MQTT)),distance_feed=next(getDistance(ultraSonicDistanceMQTT)))
+    global distance,intensity
+    return render_template('index.html')
 
 @app.route('/video_feed')
 def video_feed():
     return Response(genframe(videoStreamMQTT), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-# @app.route('/distance_feed')
-# def distance_feed():
-#     return Response(getDistance(ultraSonicDistanceMQTT),mimetype='text')
+@app.route('/distance_feed')
+def distance_feed():
+    global distance
+    distance = next(getDistance(ultraSonicDistanceMQTT))
+    return Response(distance)
 
-# @app.route('/LDR_feed')
-# def LDR_feed():
-#     return Response(getResistance(LDR_MQTT),mimetype='text')
-
+@app.route('/LDR_feed')
+def LDR_feed():
+    global intensity
+    intensity = next(getResistance(LDR_MQTT))
+    return Response(intensity)
 
 if __name__ == "__main__":
-        app.run(debug=True)
+    app.run(debug=False)
         

@@ -9,7 +9,7 @@ import argparse
 import sys
 import flask
 import struct
-import copy
+import ssl
 
 # This is needed since the working directory is the object_detection folder.
 sys.path.append('..')
@@ -33,32 +33,41 @@ import pickle
 #clientsocket.connect(('192.168.8.138',8089)) #Change the ip to the desktop ip to check
 
 # Using MQTT
-import paho.mqtt.client as mqtt
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+import json
 import base64
-
-def on_connect(client, userdata, flags, rc):
-   if rc==0:
-      print("connected ok")
-
-
-# Raspberry PI IP address
-pi = "192.168.8.196"
-amazon = "18.234.78.84"
-MQTT_BROKER = pi
 
 # Topic on which frame will be published
 MQTT_SEND = "home/server"
 MQTT_SEND_ULTRASONIC = "home/distance"
 MQTT_SEND_LIGHT_INTENSITY = "home/light"
 
-# Phao-MQTT Clinet
-client = mqtt.Client("raspberry")
-# Establishing Connection with the Broker,port number and keep alive
-client.connect(MQTT_BROKER,1883,60)
 
+################# AWS connection credentials ######################
+#awshost = "a21vdoiadhttuh-ats.iot.us-east-1.amazonaws.com"
+#awsport=8883
+#clientId = "VehicleDetector"
+#thingName = "VehicleDetector"
+#caPath = "root-CA.crt"
+#certPath = "VehicleDetector.cert.pem"
+#keyPath = "VehicleDetector.private.key"
+client = AWSIoTMQTTClient("VehicleDetector11")
+client.configureEndpoint("a21vdoiadhttuh-ats.iot.us-east-1.amazonaws.com",8883)
+client.configureCredentials("/home/pi/Desktop/VehicleDetectionProject/AmazonRootCA1.pem","/home/pi/Desktop/VehicleDetectionProject/9bec4473d8-private.pem.key","/home/pi/Desktop/VehicleDetectionProject/9bec4473d8-certificate.pem.crt")
 
+##Queue data
+client.configureOfflinePublishQueueing(-1)
+client.configureDrainingFrequency(2)
+client.configureConnectDisconnectTimeout(10)
+client.configureMQTTOperationTimeout(5)
 
-client.on_connect=on_connect  #bind call back function
+################### connect to aws ###############################
+client.connect()
+
+#client.subscribe(MQTT_SEND)
+#client.subscribe(MQTT_SEND_ULTRASONIC)
+#client.subscribe(MQTT_SEND_LIGHT_INTENSITY)
+
 
 def distance():   
     try:
@@ -96,7 +105,8 @@ def distance():
             pulse_duration = pulse_end - pulse_start
             distance = pulse_duration * 17000
             distance = round(distance, 2)
-            client.publish(MQTT_SEND_ULTRASONIC, distance)
+            client.publish(MQTT_SEND_ULTRASONIC, json.dumps(distance),QoS=1)
+            print(distance,"cm")
     except:
         GPIO.cleanup()
 
@@ -128,12 +138,13 @@ def AutoLight():
             measureresistance=endtime-starttime
             
             res=(measureresistance/cap)*adj
-            client.publish(MQTT_SEND_LIGHT_INTENSITY, res)
-            
+            client.publish(MQTT_SEND_LIGHT_INTENSITY, json.dumps(res),QoS=1)
+            print(res)
             i=i+1
             t=t+res
             if i==10:
                     t=t/i
+                    print(t)
                     i=0
                     t=0
     except:
@@ -157,13 +168,13 @@ def mapServoPosition (x,y):
     global panAngle
     #global tiltAngle need another servo for vertical adjustment
     if (x < 240): # x is the box width
-        panAngle += 1
+        panAngle += 10
         if panAngle > 180:
            panAngle = 180
         positionServo (panServo, panAngle)
 
     if (x > 260):
-        panAngle -= 1
+        panAngle -= 10
         if panAngle < 0 :
             panAngle = 0
         positionServo (panServo, panAngle)
@@ -236,7 +247,7 @@ def ObjectTrackingCamera():
         rawCapture.truncate(0)
 
         for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
-            t1 = cv2.getTickCount()            
+            t1 = cv2.getTickCount()
             
             # Acquire frame and expand frame dimensions to have shape: [1, None, None, 3]
             # i.e. a single-column array, where each item in the column has the pixel RGB value
@@ -245,19 +256,19 @@ def ObjectTrackingCamera():
             frame.setflags(write=1)
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_expanded = np.expand_dims(frame_rgb, axis=0)
-            
+
             # Perform the actual detection by running the model with the image as input
             (boxes, scores, classes, num) = sess.run(
                 [detection_boxes, detection_scores, detection_classes, num_detections],
                 feed_dict={image_tensor: frame_expanded})
                
             # get the decteded object
-            ObjectDetected = [category_index.get(value) for index,value in enumerate(classes[0]) if scores[0,index] > 0.4]
-                       
+            ObjectDetected = [category_index.get(value) for index,value in enumerate(classes[0]) if scores[0,index] > 0.5]
             #print(ObjectDetected)        
             if len(ObjectDetected) != 0:
-                if (ObjectDetected[0])["name"] == "car":
-                                        
+                if (ObjectDetected[0])["name"] == "person":
+                    #print("Person")
+            
                     # Detecting person and tracking using the camera
          
                     # Draw the results of the detection (aka 'visulaize the results')        
@@ -269,7 +280,7 @@ def ObjectTrackingCamera():
                         category_index,
                         use_normalized_coordinates=True,
                         line_thickness=8,
-                        min_score_thresh=0.60)
+                        min_score_thresh=0.40)
                     
                     # get the positions of the detection box
                     box = np.squeeze(boxes)
@@ -289,18 +300,14 @@ def ObjectTrackingCamera():
                     # get coordinates for the center point
                     x = int(center[0])
                     y = int(center[1]) # for vertical adjustment
-                    
-                    
-                    
-                    
+            
                     # draw the center point
                     cv2.circle(frame,(x,y), 6, (0,0,255), -1)
                     
                     # passing coordinates to adjust the camera
                     mapServoPosition (x,y)
-            
-            # ,"FPS: {0:.2f}".format(frame_rate_calc),(30,50),font,1,(255,255,0),2,cv2.LINE_AA
-            # cv2.putText(frame)
+                    
+            cv2.putText(frame,"FPS: {0:.2f}".format(frame_rate_calc),(30,50),font,1,(255,255,0),2,cv2.LINE_AA)
             # All the results have been drawn on the frame, so it's time to display it.
             sendFrame = frame
             #cv2.imshow('Object detector', frame)
@@ -317,8 +324,18 @@ def ObjectTrackingCamera():
             _, buffer = cv2.imencode('.jpg', frame)
             # Converting into encoded bytes
             jpg_as_text = base64.b64encode(buffer)
+            
+            #print(jpg_as_text)
+            # Decode UTF-8 bytes to Unicode, and convert single quotes 
+            # to double quotes to make it valid JSON
+            my_json = jpg_as_text.decode('utf8')
+            
+            # Load the JSON to a Python list & dump it back out as formatted JSON
+            #data = json.loads(my_json)
+            #s = json.dumps(data, indent=4, sort_keys=True)
+            
             # Publishig the Frame on the Topic home/server
-            client.publish(MQTT_SEND, jpg_as_text)
+            client.publish(MQTT_SEND, my_json,QoS=1)
             
             # Press 'q' to quit
             if cv2.waitKey(1) == ord('s'):
@@ -334,6 +351,14 @@ def ObjectTrackingCamera():
 
 if __name__ == '__main__':
      
+    #ObjectTrackingThread = threading.Thread(target=ObjectTrackingCamera,daemon=True)
+    #ObjectTrackingThread.start()
+    
+    #distanceThread = threading.Thread(target=distance,daemon=True)
+    #distanceThread.start()
+    
+    #AutoLight = threading.Thread(target=AutoLight,daemon=True)
+    #AutoLight.start()
     
     ObjectTrackingProcess = Process(target=ObjectTrackingCamera)
     ObjectTrackingProcess.start()
@@ -350,3 +375,4 @@ if __name__ == '__main__':
         ObjectTrackingProcess.terminate()
         DistanceProcess.terminate()
         AutoLightProcess.terminate()
+
