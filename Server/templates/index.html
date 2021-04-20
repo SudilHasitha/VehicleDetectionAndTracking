@@ -1,0 +1,112 @@
+<body>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- <meta http-equiv="refresh" content=".01"> -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<div class=".container-fluid">
+<div class="bg-dark text-white">
+
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h3 class="mt-5">Live Stream</h3>
+            <img src="{{ url_for('video_feed') }}" width="620" height="480">
+        </div>
+        <div class="col">
+            <h3 class="mt-5">Suspicious Vehicle</h3>
+            <img src="{{ url_for('get_photo') }}" width="310" height="240">
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    
+    <div class="row">
+        <div class="col">
+            <h3 class="mt-5">Distance Feed</h3>
+            <div class="distance"></div>
+            <div id="distanceChart">
+            </div>
+        </div>
+
+        <div class="col">
+            <h3 class="mt-5">Light Intensity</h3>
+            <div class="light"></div>
+            <div id="lightChart">
+            </div>
+        </div>
+    </div>
+
+
+</div>
+</div> 
+</div>
+<script>
+    
+    $(document).ready(function(){
+
+        setInterval(function(){
+
+            distance = $(".distance").load("http://127.0.0.1:5000/distance_feed")
+           
+        },1000);
+
+      setInterval(function(){
+            light = $(".light").load("http://127.0.0.1:5000/LDR_feed")
+            
+        },1000);
+    });
+
+    function getDistance(){
+        return parseInt($(".distance").load("http://127.0.0.1:5000/distance_feed")[0].innerText)
+
+    }
+    
+    function getLight(){
+        return parseInt($(".light").load("http://127.0.0.1:5000/LDR_feed")[0].innerText)
+            
+    }
+
+    Plotly.plot('distanceChart', [{
+        y:[getDistance()],
+        type:'line'
+    }]);
+
+    var cnt = 0;
+
+    setInterval(function(){
+
+        Plotly.extendTraces('distanceChart',{ y:[[ getDistance() ]] } ,[0]);
+        cnt++;
+        if (cnt > 100){
+            Plotly.relayout('distanceChart',{
+                xaxis:{
+                    range:[cnt-100,cnt]
+                }
+            });
+        }
+    },2000)
+
+    Plotly.plot('lightChart', [{
+        y:[getLight()],
+        type:'line'
+    }]);
+
+    var cnt2 = 0;
+
+    setInterval(function(){
+
+        Plotly.extendTraces('lightChart',{ y:[[ getLight() ]] } ,[0]);
+        cnt2++;
+        if (cnt2 > 100){
+            Plotly.relayout('lightChart',{
+                xaxis:{
+                    range:[cnt2-100,cnt2]
+                }
+            });
+        }
+    },2000)
+    
+</script>
+</body>

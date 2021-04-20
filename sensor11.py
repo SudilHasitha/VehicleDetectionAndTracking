@@ -47,6 +47,7 @@ MQTT_SEND_ULTRASONIC = "home/distance"
 MQTT_SEND_LIGHT_INTENSITY = "home/light"
 MQTT_LIGHT = "home/LED"
 MQTT_BUZZER = "home/buzzer"
+MQTT_PHOTO = "home/photo"
 
 # Phao-MQTT Clinet
 client = mqtt.Client("raspberry")
@@ -287,11 +288,12 @@ def ObjectTrackingCamera():
                 feed_dict={image_tensor: frame_expanded})
                
             # get the decteded object
-            ObjectDetected = [category_index.get(value) for index,value in enumerate(classes[0]) if scores[0,index] > 0.4]
+            ObjectDetected = [category_index.get(value) for index,value in enumerate(classes[0]) if scores[0,index] > 0.01]
             
             #print(ObjectDetected)        
             if len(ObjectDetected) != 0:
                 if (ObjectDetected[0])["name"] == "car" or (ObjectDetected[0])["name"] == "truck" or (ObjectDetected[0])["name"] == "suv":
+                #if (ObjectDetected[0])["name"] == "person":
                     car = True
                     if car:
                         BUZZER = 12
@@ -311,9 +313,13 @@ def ObjectTrackingCamera():
                         
                         for i in range(1):
                             # get the vehicle number
-                            image = Image.open("001.jpg")
-                            anpr = ANPR(debug=True)
-                            (results, lpCnt) = anpr.find_and_ocr(image, psm=7,clearBorder=True)
+                            #image = Image.open("001.jpg")
+                            #anpr = ANPR(debug=True)
+                            #(results, lpCnt) = anpr.find_and_ocr(image, psm=7,clearBorder=True)
+                            f=open("image_test.jpg", "rb") #3.7kiB in same folder
+                            fileContent = f.read()
+                            byteArr = bytearray(fileContent)
+                            client.publish(MQTT_PHOTO,byteArr)
                     except:
                         pass
                     
@@ -329,7 +335,7 @@ def ObjectTrackingCamera():
                         category_index,
                         use_normalized_coordinates=True,
                         line_thickness=8,
-                        min_score_thresh=0.40)
+                        min_score_thresh=0.20)
                     
                     # get the positions of the detection box
                     box = np.squeeze(boxes)
@@ -379,17 +385,14 @@ def ObjectTrackingCamera():
 if __name__ == '__main__':  
     
     ObjectTrackingProcess = Process(target=ObjectTrackingCamera)
-    
     DistanceProcess = Process(target=distance)
-    
     AutoLightProcess = Process(target=AutoLight)
-    
 
     process_list = [ObjectTrackingProcess,DistanceProcess,AutoLightProcess]
     for p in process_list:
         print("Process start")
         p.start()
-        time.sleep(10)
+        time.sleep(5)
         
     for p in process_list:
         p.join()
