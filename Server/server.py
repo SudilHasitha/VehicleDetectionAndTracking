@@ -1,6 +1,6 @@
 
-from flask import Flask, render_template, Response
-
+from flask import Flask, render_template, Response, request,jsonify
+import sqlite3 as sql
 #get mqtt classes
 from mqttvideostream import videoStreamMQTT
 #from mqttvideostream2 import videoStreamMQTT
@@ -36,7 +36,15 @@ def getPhoto(mqttphoto):
 @app.route('/')
 def index():
     global distance,intensity
-    return render_template('index.html')
+    con = sql.connect("database.db")
+    con.row_factory = sql.Row
+   
+    cur = con.cursor()
+    cur.execute("select * from vehicles")
+   
+    rows = cur.fetchall();
+    print(rows)
+    return render_template('index.html',rows=rows)
 
 @app.route('/video_feed')
 def video_feed():
@@ -58,6 +66,36 @@ def LDR_feed():
 def get_photo():
     return Response(getPhoto(photoMQTT), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
+@app.route('/addrec',methods = ['POST'])
+def addrec():
+        try:
+            nm = request.form['number']
+            print(nm)
+            con = sql.connect("database.db",timeout=15)
+            print(con)
+            cur = con.cursor()
+            cur.execute('''INSERT INTO vehicles VALUES (?)''',(nm,))
+            con.commit()
+            print("Record successfully added")
+            return jsonify({"Success":"Record Added"})
+            con.close()
+        except :
+            con.rollback()
+            print("error in insert operation")
+            return jsonify({"Error":"Record Not Added"})
+
+@app.route('/index_get_data')
+def getdata():
+    con = sql.connect("database.db")
+    con.row_factory = sql.Row
+   
+    cur = con.cursor()
+    cur.execute("select * from vehicles")
+   
+    rows = cur.fetchall();
+    print(rows)
+    return Response(rows=rows)
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
         

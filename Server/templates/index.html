@@ -3,7 +3,25 @@
     <!-- <meta http-equiv="refresh" content=".01"> -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-
+    <script>
+        // load data
+    function setupData() {
+    $(document).ready(function () {
+        $('#datatable').DataTable({
+            "ajax": {
+                "url": "/index_get_data", 
+                "dataType": "json",
+                "dataSrc": "data",
+                "contentType":"application/json"
+            },
+            "columns": [
+                {"data": "number"}
+            ]
+        });
+        });
+    }
+    $("#vsave").on("click", setupData);
+    </script>
 <div class=".container-fluid">
 <div class="bg-dark text-white">
 
@@ -11,11 +29,56 @@
     <div class="row">
         <div class="col">
             <h3 class="mt-5">Live Stream</h3>
-            <img src="{{ url_for('video_feed') }}" width="620" height="480">
+            <img src="{{ url_for('video_feed') }}" width="640" height="480">
         </div>
+        
         <div class="col">
-            <h3 class="mt-5">Suspicious Vehicle</h3>
-            <img src="{{ url_for('get_photo') }}" width="310" height="240">
+            <div class="container-fluid">
+                <h3 class="mt-5">Suspicious Vehicle</h3>
+                <img src="{{ url_for('get_photo') }}" width="320" height="240">
+                <br>
+            </div>
+
+            <br>
+            <div class="container-fluid">
+            <!-- get the licence plate number -->
+            <form class="row">
+                <div class="form-group">
+                    <div class="col-auto">
+                        <label>Suspicious License Plate Number:</label>
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="form-control" name="number" id="number">
+                    </div>
+                    <br>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-success float-right" id="vsave" onclick='setupData()'>Save</button>
+                    </div>
+                    <br>
+                    <br>
+                    <div class="col-auto">
+                        <div id="successAlert" class="alert alert-success" role="alert" style="display: none;"></div>
+                        <div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
+                    </div>
+                </div>
+                
+            </form>
+
+            <div class="container-fluid">
+                <!-- Display data -->
+                <table class = ".table-dark bg-dark text-white" id="datatable">
+                    <thead>
+                    <td>Suspicious Vehicles</td>
+                    </thead>
+                    
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{row["number"]}}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
         </div>
     </div>
 </div>
@@ -108,5 +171,33 @@
         }
     },2000)
     
+    // // SUBMIT FORM DATA
+    $(document).ready(function(){
+        $('form').on('submit', function(event){
+            
+            $.ajax({
+                data:{
+                    number: $('#number').val()
+                },
+                type:'POST',
+                url:'/addrec'
+            })
+            .done(function(data){
+                if (data.Error){
+                    $('#errorAlert').text(data.Error).show();
+                    $('#successAlert').hide();
+                }else{
+                    $('#successAlert').text(data.Success).show();
+                    $('#errorAlert').hide();
+                    $('#successAlert').hide(5000);
+                }
+            })
+            event.preventDefault();
+
+        });
+    });
+
+    
+
 </script>
 </body>

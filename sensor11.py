@@ -316,7 +316,7 @@ def ObjectTrackingCamera():
                             #image = Image.open("001.jpg")
                             #anpr = ANPR(debug=True)
                             #(results, lpCnt) = anpr.find_and_ocr(image, psm=7,clearBorder=True)
-                            f=open("image_test.jpg", "rb") #3.7kiB in same folder
+                            f=open(str(i)+".jpg", "rb") #3.7kiB in same folder
                             fileContent = f.read()
                             byteArr = bytearray(fileContent)
                             client.publish(MQTT_PHOTO,byteArr)
