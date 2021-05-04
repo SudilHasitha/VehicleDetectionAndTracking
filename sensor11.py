@@ -31,6 +31,8 @@ from multiprocessing import Process
 import paho.mqtt.client as mqtt
 import base64
 
+from alamSuspicious import alamSuspicious
+
 def on_connect(client, userdata, flags, rc):
    if rc==0:
       print("connected ok")
@@ -387,7 +389,9 @@ if __name__ == '__main__':
     ObjectTrackingProcess = Process(target=ObjectTrackingCamera)
     DistanceProcess = Process(target=distance)
     AutoLightProcess = Process(target=AutoLight)
-
+    #ALAM = Process(target=alamSuspicious)
+    ALAM = alamSuspicious()
+    
     process_list = [ObjectTrackingProcess,DistanceProcess,AutoLightProcess]
     for p in process_list:
         print("Process start")
@@ -403,4 +407,4 @@ if __name__ == '__main__':
         ObjectTrackingProcess.terminate()
         DistanceProcess.terminate()
         AutoLightProcess.terminate()
-        AutoLightProcess2.terminate()        
+        AutoLightProcess2.terminate()  
