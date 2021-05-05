@@ -7,6 +7,7 @@ from mqttvideostream import videoStreamMQTT
 from mqttultrasonic import ultraSonicDistanceMQTT
 from mqttLDR import LDR_MQTT
 from mqttphoto import photoMQTT
+from mqttgate import gateMQTT
 
 #Initialize the Flask app
 app = Flask(__name__)
@@ -96,6 +97,15 @@ def getdata():
     rows = cur.fetchall();
     print(rows)
     return Response(rows=rows)
+
+@app.route("/lightIntensity", methods=['GET'])
+def getData():
+
+    intensity = request.args.get('intensity')
+    gateMQTTObj = gateMQTT()
+    gateMQTTObj.gateState(intensity)
+    return jsonify({"Success":"Record Added"})
+
 if __name__ == "__main__":
     app.run(debug=True)
         

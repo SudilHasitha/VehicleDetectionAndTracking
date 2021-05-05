@@ -32,6 +32,7 @@ import paho.mqtt.client as mqtt
 import base64
 
 from alamSuspicious import alamSuspicious
+from gateController import gateController
 
 def on_connect(client, userdata, flags, rc):
    if rc==0:
@@ -389,8 +390,8 @@ if __name__ == '__main__':
     ObjectTrackingProcess = Process(target=ObjectTrackingCamera)
     DistanceProcess = Process(target=distance)
     AutoLightProcess = Process(target=AutoLight)
-    #ALAM = Process(target=alamSuspicious)
     ALAM = alamSuspicious()
+    gateController = gateController()
     
     process_list = [ObjectTrackingProcess,DistanceProcess,AutoLightProcess]
     for p in process_list:

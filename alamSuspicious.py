@@ -9,8 +9,8 @@ MQTT_ALAM = "home/ALAM"
 
 class alamSuspicious:
         
-    def on_connect(client, userdata, flags, rc):
-        print("Connected with result code "+str(rc))
+    def on_connect(self,client, userdata, flags, rc):
+        print("Connected with result code "+str(self.rc))
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
         print(client.subscribe(MQTT_ALAM))
