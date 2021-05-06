@@ -13,49 +13,34 @@ MQTT_BROKER =  pi
 MQTT_GATE = "home/gate"
 
 class gateController:
-        # The callback for when the client receives a CONNACK response from the server.
-        def __init__(self):
-            global gate
-            self.gate = ""
-        
-        def on_connect(self,client, userdata, rc, properties=None):
-            if rc==0:
-                    print("connected gate controller")
- 
-        # The callback for when a PUBLISH message is received from the server.
-        def on_message(self,client, userdata, msg):
-            global gate
-            # Decoding the message
-            gate = msg.payload
-            print(gate)
-            if gate:
-                    for pin in control_pins:
-                        GPIO.setup(pin, GPIO.OUT)
-                        GPIO.output(pin, 0)
-                    halfstep_seq = [
-                      [1,0,0,0],
-                      [1,1,0,0],
-                      [0,1,0,0],
-                      [0,1,1,0],
-                      [0,0,1,0],
-                      [0,0,1,1],
-                      [0,0,0,1],
-                      [1,0,0,1]
-                    ]
-                    for i in range(512):
-                        for halfstep in range(8):
-                                for pin in range(4):
-                                    GPIO.output(control_pins[pin], halfstep_seq[halfstep][pin])
-                                time.sleep(0.001)
-            else:
-                return 0
+            # The callback for when the client receives a CONNACK response from the server.
+            def on_subscribe(client, userdata, mid, granted_qos):   #create function for callback
+                print("subscribed with qos",granted_qos, "\n")
                 
-        client = mqtt.Client("Gate")
-        client.connect(MQTT_BROKER,1883)
-        client.subscribe(MQTT_GATE)
-        client.loop_start()
-        client.on_connect = on_connect
-        client.on_message = on_message
-        
-        
+            def on_disconnect(client, userdata,rc=0):
+                print("DisConnected result code "+str(rc))
+
+            def on_connect(client, userdata, flags, rc):
+                print("Connected flags"+str(flags)+"result code "+str(rc))
+
+
+            def on_message(client, userdata, message):
+                msg=str(message.payload.decode("utf-8"))
+                print("message received  "  +msg)
+                
+            def on_publish(client, userdata, mid):
+                print("message published "  +str(mid))
+
+            send_topic ="house/client_b/" +MQTT_GATE
+            client= mqtt.Client("ClientA",False)       #create client object
+
+            client.on_subscribe = on_subscribe   #assign function to callback
+            client.on_disconnect = on_disconnect #assign function to callback
+            client.on_connect = on_connect #assign function to callback
+            client.on_message=on_message
+            client.connect(MQTT_BROKER,1883)           #establish connection
+            client.loop_start()
+            client.subscribe(MQTT_GATE)
+                
+                
 
