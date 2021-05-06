@@ -7,7 +7,14 @@ from mqttvideostream import videoStreamMQTT
 from mqttultrasonic import ultraSonicDistanceMQTT
 from mqttLDR import LDR_MQTT
 from mqttphoto import photoMQTT
-from mqttgate import gateMQTT
+# from mqttgate import gateMQTT
+import paho.mqtt.client as mqtt
+
+amazon = "18.212.25.214"
+pi = "192.168.8.196"
+MQTT_BROKER =  pi
+MQTT_GATE = "home/gate"
+
 
 #Initialize the Flask app
 app = Flask(__name__)
@@ -102,8 +109,13 @@ def getdata():
 def getData():
 
     intensity = request.args.get('intensity')
-    gateMQTTObj = gateMQTT()
-    gateMQTTObj.gateState(intensity)
+    # gateMQTTObj = gateMQTT()
+    # # gateMQTTObj.gateState(intensity)
+    # gateMQTTObj.intensity = intensity
+    client = mqtt.Client("Gate")
+    client.connect(MQTT_BROKER,1883)
+    client.loop_start()
+    client.publish(MQTT_GATE,intensity)
     return jsonify({"Success":"Record Added"})
 
 if __name__ == "__main__":

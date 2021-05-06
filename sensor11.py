@@ -36,7 +36,8 @@ from gateController import gateController
 
 def on_connect(client, userdata, flags, rc):
    if rc==0:
-      print("connected ok")
+       pass
+      #print("connected ok")
 
 
 # Raspberry PI IP address
@@ -169,7 +170,7 @@ def AutoLight():
                     i=0
                     t=0
             
-            client.publish(MQTT_SEND_LIGHT_INTENSITY, res)
+            client.publish(MQTT_SEND_LIGHT_INTENSITY, round(res,2))
             
             #'''
             print(res)
@@ -391,7 +392,7 @@ if __name__ == '__main__':
     DistanceProcess = Process(target=distance)
     AutoLightProcess = Process(target=AutoLight)
     ALAM = alamSuspicious()
-    gateController = gateController()
+    GATE = gateController()
     
     process_list = [ObjectTrackingProcess,DistanceProcess,AutoLightProcess]
     for p in process_list:
@@ -408,4 +409,4 @@ if __name__ == '__main__':
         ObjectTrackingProcess.terminate()
         DistanceProcess.terminate()
         AutoLightProcess.terminate()
-        AutoLightProcess2.terminate()  
+        

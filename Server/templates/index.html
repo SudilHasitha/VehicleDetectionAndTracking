@@ -7,13 +7,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
     <style>
         .distance::after {
-            content: " cm";
+            content: " cm/s";
+        }
+        .distance::before{
+            content: "Instantaneous Velocity: ";
         }
         .light::after {
             content:  " \2126" ;
         }
+        .light::before{
+            content:"LDR Resistance: "
+        }
         .speed::after {
             content: " cm/s";
+        }
+        .speed::before{
+            content: "Speed: ";
         }
     </style>
     <script>
@@ -96,8 +105,8 @@
     </div>
 </div>
 <div>                                   
-    Brightness <span id="brightnessLevel"></span>:<br>
-    <input type="range" min="0" max="100" value="0" class="brightnessLevel">
+    Gate Controls <span id="brightnessLevel"></span>:<br>
+    Open <input type="range" min="0" max="100" value="0" class="brightnessLevel"> Close
 </div>
 <div class="container">
     
@@ -113,7 +122,7 @@
 
         <div class="col">
             <h3 class="mt-5">Light Intensity</h3>
-            <div></div>
+            <br>
             <div class="light"></div>
             <div id="lightChart">
             </div>
@@ -150,7 +159,7 @@
             if (deltaDistance.length>2){
                 speed = Math.abs(deltaDistance[deltaDistance.length - 1] - deltaDistance[deltaDistance.length - 2])
                 console.log(speed)
-                $(".speed").html(speed)
+                $(".speed").html(speed.toFixed(2))
             } 
         },1000);
 
@@ -164,8 +173,7 @@
     }
     
     function getLight(){
-        return parseInt($(".light").load("http://127.0.0.1:5000/LDR_feed")[0].innerText)
-            
+        return parseInt($(".light").load("http://127.0.0.1:5000/LDR_feed")[0].innerText)      
     }
 
     Plotly.plot('distanceChart', [{
