@@ -1,9 +1,4 @@
 import paho.mqtt.client as mqtt
-import time
-import RPi.GPIO as GPIO
-import time
-GPIO.setmode(GPIO.BCM)
-control_pins = [7,25,5,6]
 
 mqtt_username    = "pi"
 mqtt_password    = "raspberry"
@@ -12,7 +7,11 @@ pi = "192.168.8.196"
 MQTT_BROKER =  pi
 MQTT_GATE = "home/gate"
 
+## gate controlling code
+from gateControls import gateControls
+        
 class gateController:
+            
             # The callback for when the client receives a CONNACK response from the server.
             def on_subscribe(client, userdata, mid, granted_qos):   #create function for callback
                 print("subscribed with qos",granted_qos, "\n")
@@ -26,6 +25,12 @@ class gateController:
 
             def on_message(client, userdata, message):
                 msg=str(message.payload.decode("utf-8"))
+                gateObj = gateControls()
+
+                if int(msg) > 50:
+                    gateObj.moveSteps(1,3,512)
+                if int(msg) <50:
+                    gateObj.moveSteps(0,3,512)
                 print("message received  "  +msg)
                 
             def on_publish(client, userdata, mid):
