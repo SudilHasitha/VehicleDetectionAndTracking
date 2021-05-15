@@ -1,10 +1,17 @@
-<body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <!-- <meta http-equiv="refresh" content=".01"> -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <!-- <script src="./paho-mqtt.js"></script>   -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- <meta http-equiv="refresh" content=".01"> -->
     <style>
         .distance::after {
             content: " cm/s";
@@ -25,6 +32,8 @@
             content: "Speed: ";
         }
     </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
         // load data
     function setupData() {
@@ -44,52 +53,149 @@
     }
     $("#vsave").on("click", setupData);
     </script>
-<div class=".container-fluid">
-<div class="bg-dark text-white">
-
-<div class="container">
+</head>
+<body  class="text-dark" style="font-family: 'Quicksand', sans-serif;font-weight: bold;">
+<nav class="navbar navbar-light bg-light container-fluid navbar-rounded shadow-sm">
+    <span class="navbar-brand mb-0 h1">DASHBOARD</span>
+    </nav>
+<div class="mr-5 ml-5">
     <div class="row">
-        <div class="col">
-            <h3 class="mt-5">Live Stream</h3>
-            <img src="{{ url_for('video_feed') }}" width="640" height="480">
-        </div>
-        
-        <div class="col">
-            <div class="container-fluid">
-                <h3 class="mt-5">Suspicious Vehicle</h3>
-                <img src="{{ url_for('get_photo') }}" width="320" height="240">
-                <br>
-            </div>
-
-            <br>
-            <div class="container-fluid">
-            <!-- get the licence plate number -->
-            <form class="row">
-                <div class="form-group">
-                    <div class="col-auto">
-                        <label>Suspicious License Plate Number:</label>
+        <div class="col-6">
+            <div class="row">
+                <div class="col container">
+                    <div class="row" >
+                        <h4 class="mt-5">Live Stream:</h4>
                     </div>
-                    <div class="col-auto">
-                        <input type="text" class="form-control" name="number" id="number">
-                    </div>
-                    <br>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-success float-right" id="vsave" onclick='setupData()'>Save</button>
-                    </div>
-                    <br>
-                    <br>
-                    <div class="col-auto">
-                        <div id="successAlert" class="alert alert-success" role="alert" style="display: none;"></div>
-                        <div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
+                    <div class="row">
+                        <img src="{{ url_for('video_feed') }}" width="440" height="480">
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="row mx-auto">
+                <div class="col">
+                    <div class="row" >
+                        <h4 class="mt-5">Live Stream:</h4>
+                    </div>
+                    <div class="row">
+                        <img src="{{ url_for('video_feed') }}" width="440" height="280">
+                    </div>
+                    <div class="row mt-2">
+                        <div class="form-group">
+                            <div class="row-auto">
+                                <label>Suspicious License Plate Number:</label>
+                            </div>
+                            <div class="row-auto">
+                                <input type="text" class="form-control d-flex p-2" name="number" id="number">
+                            </div>
+                            <br/>
+                            <div class="row-auto">
+                                <button type="submit" class="btn btn-success float-right" id="vsave" onclick='setupData()'>Save</button>
+                            </div>
+                            <div class="col-auto">
+                                <div id="successAlert" class="alert alert-success" role="alert" style="display: none;"></div>
+                                <div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- <div class="col-4">
+                <div class="row float-right">
+                <div class="container mt-5 ">
+                    <div class="row">
+                        <div class="card" style="width: 15em;background-color: #F7F9FA;"">
+                            <div class="card-body" >
+                                <h5>Vehicle Number:</h5>
+                                <p>ABC1234</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="card " style="width: 15em;background-color: #F7F9FA;">
+                            <div class="card-body">
+                                <h5>Vehicle Type: </h5>
+                                <p>Car</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="card" style="width: 15em;background-color: #F7F9FA;">
+                            <div class="card-body">
+                                <h5>Vehicle Status: </h5>
+                                <p>Safe</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="card" style="width: 15em;background-color: #F7F9FA;">
+                            <div class="card-body">
+                                <h5>Total Vehicles:</h5>
+                                <p>120</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+        <!-- <div class="col">
+            <div class="col-auto">
                 
-            </form>
+                <div class="row" >
+                        <div class="col">
+                            <img src="{{ url_for('get_photo') }}" width="320" height="240">
+                        </div>
+                        <div class="col">
+                            <div class="row card">
+                                <h3>Live Stream:</h4>
+                            </div>
+                        </div>
 
-            <div class="container-fluid">
-                <!-- Display data -->
-                <table class = ".table-dark bg-dark text-white" id="datatable">
-                    <thead>
+                </div>
+                <br/>
+                <div class="row ml-1">
+                    <div class="form-group">
+                        <div class="row-auto">
+                            <label>Suspicious License Plate Number:</label>
+                        </div>
+                        <div class="row-auto">
+                            <input type="text" style="width: 320;" class="form-control" name="number" id="number">
+                        </div>
+                        <br/>
+                        <div class="row-auto">
+                            <button type="submit" class="btn btn-success float-right" id="vsave" onclick='setupData()'>Save</button>
+                        </div>
+                        <div class="col-auto">
+                            <div id="successAlert" class="alert alert-success" role="alert" style="display: none;"></div>
+                            <div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> -->
+        <!-- <div class="col">
+            <div class="container" style="width: 100;height: 100;">
+                <img src="{{ url_for('get_photo') }}" width="320" height="240">
+            </div>
+        </div> -->
+    </div>
+</br>
+    <div>                                   
+        Gate Controls <span id="brightnessLevel"></span>:<br>
+        Open <input type="range" min="0" max="100" value="0" class="brightnessLevel"> Close
+    </div>
+    <br/>
+    <div class="row container">
+        <h4>Vehicle List</h4>
+    </div>
+    <dov class="row">
+        <div class="container-fluid">
+            <!-- Display data -->
+            <table class="table table-striped">
+                <thead>
                     <td>Suspicious Vehicles</td>
                     </thead>
                     
@@ -98,151 +204,140 @@
                         <td>{{row["number"]}}</td>
                     </tr>
                     {% endfor %}
-                </table>
-            </div>
-
+              </table>
         </div>
-    </div>
-</div>
-<div>                                   
-    Gate Controls <span id="brightnessLevel"></span>:<br>
-    Open <input type="range" min="0" max="100" value="0" class="brightnessLevel"> Close
-</div>
-<div class="container">
-    
+    </dov>
     <div class="row">
-
-        <div class="col">
-            <h3 class="mt-5">Distance Vs Time</h3>
-            <div class="speed"></div>
-            <div class="distance"></div>
-            <div id="distanceChart">
-            </div>
-        </div>
-
-        <div class="col">
-            <h3 class="mt-5">Light Intensity</h3>
-            <br>
-            <div class="light"></div>
-            <div id="lightChart">
+        <div class="container">
+        
+            <div class="row">
+                <div class="col">
+                    <h3 class="mt-5">Distance Feed</h3>
+                    <div class="distance"></div>
+                    <div id="distanceChart">
+                    </div>
+                </div>
+        
+                <div class="col">
+                    <h3 class="mt-5">Light Intensity</h3>
+                    <div class="light"></div>
+                    <div id="lightChart">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+   
+</div>    
 
-
-</div>
-
-
-
-</div> 
-</div>
 <script> 
-        $(document).ready(function() {                                                        
-            // Event listener for Slider value changes.
-            $("input[type=range].brightnessLevel").on('input', function() {
-                level = $(this).val();
-                $.getJSON({
-                    url: "/lightIntensity",
-                    data:{intensity:level}
-                })
-            });
+    $(document).ready(function() {                                                        
+        // Event listener for Slider value changes.
+        $("input[type=range].brightnessLevel").on('input', function() {
+            level = $(this).val();
+            $.getJSON({
+                url: "/lightIntensity",
+                data:{intensity:level}
+            })
         });
+    });
 </script>
 <script>
-    var deltaDistance = []
-    $(document).ready(function(){
-        setInterval(function(){
-            distance = $(".distance").load("http://127.0.0.1:5000/distance_feed")
-            
-            deltaDistance.push(distance[0].innerText)
-            console.log(deltaDistance)
-            if (deltaDistance.length>2){
-                speed = Math.abs(deltaDistance[deltaDistance.length - 1] - deltaDistance[deltaDistance.length - 2])
-                console.log(speed)
-                $(".speed").html(speed.toFixed(2))
-            } 
-        },1000);
-
-      setInterval(function(){
-            light = $(".light").load("http://127.0.0.1:5000/LDR_feed")
-        },1000);
-    });
-
-    function getDistance(){
-        return parseInt($(".distance").load("http://127.0.0.1:5000/distance_feed")[0].innerText)
-    }
-    
-    function getLight(){
-        return parseInt($(".light").load("http://127.0.0.1:5000/LDR_feed")[0].innerText)      
-    }
-
-    Plotly.plot('distanceChart', [{
-        y:[getDistance()],
-        type:'line'
-    }]);
-
-    var cnt = 0;
-
+var deltaDistance = []
+$(document).ready(function(){
     setInterval(function(){
+        distance = $(".distance").load("http://127.0.0.1:5000/distance_feed")
+        
+        deltaDistance.push(distance[0].innerText)
+        console.log(deltaDistance)
+        if (deltaDistance.length>2){
+            speed = Math.abs(deltaDistance[deltaDistance.length - 1] - deltaDistance[deltaDistance.length - 2])
+            console.log(speed)
+            $(".speed").html(speed.toFixed(2))
+        } 
+    },1000);
 
-        Plotly.extendTraces('distanceChart',{ y:[[ getDistance() ]] } ,[0]);
-        cnt++;
-        if (cnt > 100){
-            Plotly.relayout('distanceChart',{
-                xaxis:{
-                    range:[cnt-100,cnt]
-                }
-            });
-        }
-    },2000)
+  setInterval(function(){
+        light = $(".light").load("http://127.0.0.1:5000/LDR_feed")
+    },1000);
+});
 
-    Plotly.plot('lightChart', [{
-        y:[getLight()],
-        type:'line'
-    }]);
+function getDistance(){
+    return parseInt($(".distance").load("http://127.0.0.1:5000/distance_feed")[0].innerText)
+}
 
-    var cnt2 = 0;
+function getLight(){
+    return parseInt($(".light").load("http://127.0.0.1:5000/LDR_feed")[0].innerText)      
+}
 
-    setInterval(function(){
+Plotly.plot('distanceChart', [{
+    y:[getDistance()],
+    type:'line'
+}]);
 
-        Plotly.extendTraces('lightChart',{ y:[[ getLight() ]] } ,[0]);
-        cnt2++;
-        if (cnt2 > 100){
-            Plotly.relayout('lightChart',{
-                xaxis:{
-                    range:[cnt2-100,cnt2]
-                }
-            });
-        }
-    },2000)
-    
-    // // SUBMIT FORM DATA
-    $(document).ready(function(){
-        $('form').on('submit', function(event){
-            
-            $.ajax({
-                data:{
-                    number: $('#number').val()
-                },
-                type:'POST',
-                url:'/addrec'
-            })
-            .done(function(data){
-                if (data.Error){
-                    $('#errorAlert').text(data.Error).show();
-                    $('#successAlert').hide();
-                }else{
-                    $('#successAlert').text(data.Success).show();
-                    $('#errorAlert').hide();
-                    $('#successAlert').hide(5000);
-                }
-            })
-            event.preventDefault();
+var cnt = 0;
 
+setInterval(function(){
+
+    Plotly.extendTraces('distanceChart',{ y:[[ getDistance() ]] } ,[0]);
+    cnt++;
+    if (cnt > 100){
+        Plotly.relayout('distanceChart',{
+            xaxis:{
+                range:[cnt-100,cnt]
+            }
         });
-    });
+    }
+},2000)
 
-    
+Plotly.plot('lightChart', [{
+    y:[getLight()],
+    type:'line'
+}]);
+
+var cnt2 = 0;
+
+setInterval(function(){
+
+    Plotly.extendTraces('lightChart',{ y:[[ getLight() ]] } ,[0]);
+    cnt2++;
+    if (cnt2 > 100){
+        Plotly.relayout('lightChart',{
+            xaxis:{
+                range:[cnt2-100,cnt2]
+            }
+        });
+    }
+},2000)
+
+// // SUBMIT FORM DATA
+$(document).ready(function(){
+    $('form').on('submit', function(event){
+        
+        $.ajax({
+            data:{
+                number: $('#number').val()
+            },
+            type:'POST',
+            url:'/addrec'
+        })
+        .done(function(data){
+            if (data.Error){
+                $('#errorAlert').text(data.Error).show();
+                $('#successAlert').hide();
+            }else{
+                $('#successAlert').text(data.Success).show();
+                $('#errorAlert').hide();
+                $('#successAlert').hide(5000);
+            }
+        })
+        event.preventDefault();
+
+    });
+});
+
+
 
 </script>
 </body>
+</html>
